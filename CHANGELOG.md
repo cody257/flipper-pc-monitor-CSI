@@ -1,3 +1,9 @@
+## 1.3.0
+
+- Graph page: 60 seconds of on-device history for CPU, RAM, GPU and VRAM
+- Network page now shows the Wi-Fi SSID, delivered as a third typed frame
+- Page dots shrink to 2px to make room for the third page
+
 ## 1.2.0
 
 - Second page: network info (Wi-Fi signal, link rate, band/channel, public IP, VPN)

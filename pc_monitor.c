@@ -25,10 +25,16 @@ static void render_callback(Canvas* canvas, void* ctx) {
         return;
 
     case BtStateRecieving:
-        if(app->page == PageNet) {
+        switch(app->page) {
+        case PageNet:
             draw_net_view(canvas, app);
-        } else {
+            break;
+        case PageGraph:
+            draw_graph_view(canvas, app);
+            break;
+        default:
             draw_bars_view(canvas, app);
+            break;
         }
         break;
 
@@ -46,6 +52,19 @@ static void input_callback(InputEvent* input_event, void* ctx) {
     furi_message_queue_put(event_queue, input_event, FuriWaitForever);
 }
 
+static void push_history(PcMonitorApp* app) {
+    uint8_t i = app->hist_index;
+
+    // 255 is the backend's "no data" sentinel; store a flat line for those.
+    app->hist_cpu[i] = app->data.cpu_usage <= 100 ? app->data.cpu_usage : 0;
+    app->hist_ram[i] = app->data.ram_usage <= 100 ? app->data.ram_usage : 0;
+    app->hist_gpu[i] = app->data.gpu_usage <= 100 ? app->data.gpu_usage : 0;
+    app->hist_vram[i] = app->data.vram_usage <= 100 ? app->data.vram_usage : 0;
+
+    app->hist_index = (uint8_t)((i + 1) % HIST_LEN);
+    if(app->hist_count < HIST_LEN) app->hist_count++;
+}
+
 static uint16_t bt_serial_callback(SerialServiceEvent event, void* ctx) {
     furi_assert(ctx);
     PcMonitorApp* app = ctx;
@@ -60,6 +79,7 @@ static uint16_t bt_serial_callback(SerialServiceEvent event, void* ctx) {
 
         if(event.data.size == sizeof(DataStruct)) {
             memcpy(&app->data, event.data.buffer, sizeof(DataStruct));
+            push_history(app);
             app->bt_state = BtStateRecieving;
             app->last_packet = furi_hal_rtc_get_timestamp();
 
@@ -77,6 +97,14 @@ static uint16_t bt_serial_callback(SerialServiceEvent event, void* ctx) {
             if(net.magic == NET_MAGIC) {
                 app->net = net;
                 app->net_valid = true;
+                view_port_update(app->view_port);
+            }
+        } else if(event.data.size == sizeof(SsidStruct)) {
+            SsidStruct ssid;
+            memcpy(&ssid, event.data.buffer, sizeof(SsidStruct));
+            if(ssid.magic == SSID_MAGIC) {
+                app->ssid = ssid;
+                app->ssid_valid = true;
                 view_port_update(app->view_port);
             }
         }

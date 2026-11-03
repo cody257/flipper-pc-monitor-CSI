@@ -39,10 +39,10 @@ void draw_net_view(Canvas* canvas, void* ctx) {
     } else {
         snprintf(value, sizeof(value), "n/a");
     }
-    draw_row(canvas, 11, "Wi-Fi", value);
+    draw_row(canvas, 9, "Wi-Fi", value);
 
     snprintf(value, sizeof(value), "%u Mbps", app->net.wifi_mbps);
-    draw_row(canvas, 22, "Link", value);
+    draw_row(canvas, 19, "Link", value);
 
     const char* band = band_str(app->net.band);
     if(band && app->net.channel) {
@@ -52,7 +52,16 @@ void draw_net_view(Canvas* canvas, void* ctx) {
     } else {
         snprintf(value, sizeof(value), "n/a");
     }
-    draw_row(canvas, 33, "Band", value);
+    draw_row(canvas, 29, "Band", value);
+
+    char ssid[13];
+    uint8_t ssid_len = 0;
+    if(app->ssid_valid) {
+        ssid_len = app->ssid.length > 12 ? 12 : app->ssid.length;
+        memcpy(ssid, app->ssid.name, ssid_len);
+    }
+    ssid[ssid_len] = 0;
+    draw_row(canvas, 39, "SSID", ssid_len ? ssid : "n/a");
 
     if(app->net.flags & NET_FLAG_HAS_IP) {
         snprintf(
@@ -76,7 +85,7 @@ void draw_net_view(Canvas* canvas, void* ctx) {
     } else {
         snprintf(value, sizeof(value), "n/a");
     }
-    draw_row(canvas, 44, "IP", value);
+    draw_row(canvas, 49, "IP", value);
 
-    draw_row(canvas, 55, "VPN", (app->net.flags & NET_FLAG_VPN) ? "on" : "off");
+    draw_row(canvas, 59, "VPN", (app->net.flags & NET_FLAG_VPN) ? "on" : "off");
 }
