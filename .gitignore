@@ -5,7 +5,3 @@ dist/
 # binaries
 *.fap
 *.elf
-fpcm-windows-x86_64.exe
-
-# downloaded backend (nested project, has its own repo)
-FORKED/
