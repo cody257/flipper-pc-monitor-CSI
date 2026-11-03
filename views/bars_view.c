@@ -8,7 +8,7 @@ void draw_bars_view(Canvas* canvas, void* ctx) {
     canvas_set_font(canvas, FontKeyboard);
 
     uint8_t line = 0;
-    uint8_t spacing = app->lines_count ? SCREEN_HEIGHT / app->lines_count : 0;
+    uint8_t spacing = app->lines_count ? BARS_HEIGHT / app->lines_count : 0;
     uint8_t margin_top = spacing ? (spacing - LINE_HEIGHT) / 2 : 0;
     char str[32];
 

@@ -1,5 +1,20 @@
 #include "pc_monitor.h"
 
+static void draw_page_indicator(Canvas* canvas, PcMonitorApp* app) {
+    uint8_t x = 64 - (PageCount * PAGE_DOTS_STEP) / 2 + 1;
+
+    canvas_set_color(canvas, ColorBlack);
+    for(uint8_t i = 0; i < PageCount; i++) {
+        if(i == (uint8_t)app->page) {
+            canvas_draw_box(
+                canvas, x + i * PAGE_DOTS_STEP, PAGE_DOTS_Y, PAGE_DOTS_SIZE, PAGE_DOTS_SIZE);
+        } else {
+            canvas_draw_frame(
+                canvas, x + i * PAGE_DOTS_STEP, PAGE_DOTS_Y, PAGE_DOTS_SIZE, PAGE_DOTS_SIZE);
+        }
+    }
+}
+
 static void render_callback(Canvas* canvas, void* ctx) {
     furi_assert(ctx);
     PcMonitorApp* app = ctx;
@@ -7,16 +22,22 @@ static void render_callback(Canvas* canvas, void* ctx) {
     switch(app->bt_state) {
     case BtStateWaiting:
         draw_connect_view(canvas);
-        break;
+        return;
 
     case BtStateRecieving:
-        draw_bars_view(canvas, app);
+        if(app->page == PageNet) {
+            draw_net_view(canvas, app);
+        } else {
+            draw_bars_view(canvas, app);
+        }
         break;
 
     default:
         draw_status_view(canvas, app);
-        break;
+        return;
     }
+
+    draw_page_indicator(canvas, app);
 }
 
 static void input_callback(InputEvent* input_event, void* ctx) {
@@ -46,6 +67,18 @@ static uint16_t bt_serial_callback(SerialServiceEvent event, void* ctx) {
             notification_message(app->notification, &sequence_display_backlight_on);
 
             notification_message(app->notification, &sequence_blink_blue_10);
+
+            view_port_update(app->view_port);
+        } else if(event.data.size == sizeof(NetStruct)) {
+            // Second frame type. Copied out first so a stray packet with the
+            // right length but wrong magic can never be mistaken for this one.
+            NetStruct net;
+            memcpy(&net, event.data.buffer, sizeof(NetStruct));
+            if(net.magic == NET_MAGIC) {
+                app->net = net;
+                app->net_valid = true;
+                view_port_update(app->view_port);
+            }
         }
     }
 
@@ -54,6 +87,7 @@ static uint16_t bt_serial_callback(SerialServiceEvent event, void* ctx) {
 
 static PcMonitorApp* pc_monitor_alloc() {
     PcMonitorApp* app = malloc(sizeof(PcMonitorApp));
+    memset(app, 0, sizeof(PcMonitorApp));
     app->view_port = view_port_alloc();
     app->event_queue = furi_message_queue_alloc(8, sizeof(InputEvent));
     app->notification = furi_record_open(RECORD_NOTIFICATION);
@@ -106,7 +140,17 @@ int32_t pc_monitor_app(void* p) {
     InputEvent event;
     while(true) {
         if(furi_message_queue_get(app->event_queue, &event, 1) == FuriStatusOk) {
-            if(event.type == InputTypeShort && event.key == InputKeyBack) break;
+            if(event.type == InputTypeShort) {
+                if(event.key == InputKeyBack) break;
+
+                if(event.key == InputKeyLeft) {
+                    app->page = (PageId)((app->page + PageCount - 1) % PageCount);
+                    view_port_update(app->view_port);
+                } else if(event.key == InputKeyRight) {
+                    app->page = (PageId)((app->page + 1) % PageCount);
+                    view_port_update(app->view_port);
+                }
+            }
         }
 
         if(app->bt_state == BtStateRecieving &&

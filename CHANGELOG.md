@@ -1,3 +1,10 @@
+## 1.2.0
+
+- Second page: network info (Wi-Fi signal, link rate, band/channel, public IP, VPN)
+- Left/Right switches pages, with a page indicator at the bottom
+- Packets are now typed: the original 16-byte resource frame is unchanged, so an
+  older backend keeps working
+
 ## 1.1.3
 
 - Adressed BLE API changes
