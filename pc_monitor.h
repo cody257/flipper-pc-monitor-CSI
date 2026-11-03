@@ -13,6 +13,7 @@
 
 #include "views/bars_view.h"
 #include "views/connect_view.h"
+#include "views/control_view.h"
 #include "views/graph_view.h"
 #include "views/net_view.h"
 #include "views/status_view.h"
@@ -99,8 +100,22 @@ typedef enum {
     PageBars,
     PageNet,
     PageGraph,
+    PageControl,
     PageCount,
 } PageId;
+
+// Commands sent Flipper -> PC. Must match src/commands.rs.
+#define CMD_MAGIC 0xC1
+
+typedef enum {
+    CmdVolUp = 0x01,
+    CmdVolDown = 0x02,
+    CmdMute = 0x03,
+    CmdPlayPause = 0x04,
+    CmdNext = 0x05,
+    CmdPrev = 0x06,
+    CmdLock = 0x07,
+} CommandId;
 
 typedef struct {
     Bt* bt;
@@ -129,4 +144,6 @@ typedef struct {
     uint8_t hist_vram[HIST_LEN];
     uint8_t hist_index;
     uint8_t hist_count;
+
+    uint8_t control_index;
 } PcMonitorApp;

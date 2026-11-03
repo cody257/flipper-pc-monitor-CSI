@@ -32,6 +32,9 @@ static void render_callback(Canvas* canvas, void* ctx) {
         case PageGraph:
             draw_graph_view(canvas, app);
             break;
+        case PageControl:
+            draw_control_view(canvas, app);
+            break;
         default:
             draw_bars_view(canvas, app);
             break;
@@ -63,6 +66,13 @@ static void push_history(PcMonitorApp* app) {
 
     app->hist_index = (uint8_t)((i + 1) % HIST_LEN);
     if(app->hist_count < HIST_LEN) app->hist_count++;
+}
+
+static void send_command(PcMonitorApp* app, uint8_t command) {
+    if(!app->ble_serial_profile) return;
+
+    uint8_t frame[3] = {CMD_MAGIC, command, 0};
+    ble_profile_serial_tx(app->ble_serial_profile, frame, sizeof(frame));
 }
 
 static uint16_t bt_serial_callback(SerialServiceEvent event, void* ctx) {
@@ -177,6 +187,18 @@ int32_t pc_monitor_app(void* p) {
                 } else if(event.key == InputKeyRight) {
                     app->page = (PageId)((app->page + 1) % PageCount);
                     view_port_update(app->view_port);
+                } else if(app->page == PageControl) {
+                    if(event.key == InputKeyUp) {
+                        if(app->control_index > 0) app->control_index--;
+                        view_port_update(app->view_port);
+                    } else if(event.key == InputKeyDown) {
+                        if((uint8_t)(app->control_index + 1) < pc_control_count) {
+                            app->control_index++;
+                        }
+                        view_port_update(app->view_port);
+                    } else if(event.key == InputKeyOk) {
+                        send_command(app, pc_control_items[app->control_index].command);
+                    }
                 }
             }
         }

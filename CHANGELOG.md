@@ -1,3 +1,9 @@
+## 1.4.0
+
+- Control page: volume, mute, play/pause, next/prev and lock
+- Flipper -> PC commands over the reverse BLE channel (3-byte frames)
+- Up/Down selects an action, OK sends it
+
 ## 1.3.0
 
 - Graph page: 60 seconds of on-device history for CPU, RAM, GPU and VRAM
